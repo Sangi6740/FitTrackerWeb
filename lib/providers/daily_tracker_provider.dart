@@ -48,6 +48,16 @@ class DailyTrackerProvider extends ChangeNotifier {
   void _loadRecordForDate(DateTime date) {
     _currentRecord =
         _storageService.getRecord(date) ?? DailyRecord.empty(date);
+        
+    // Enforce rule: cannot be checked if no items exist.
+    if (_currentRecord != null) {
+      if (_currentRecord!.preWorkoutEntries.isEmpty) _currentRecord!.preWorkoutDone = false;
+      if (_currentRecord!.postWorkoutEntries.isEmpty) _currentRecord!.postWorkoutDone = false;
+      if (_currentRecord!.breakfastEntries.isEmpty) _currentRecord!.breakfastDone = false;
+      if (_currentRecord!.lunchEntries.isEmpty) _currentRecord!.lunchDone = false;
+      if (_currentRecord!.snackEntries.isEmpty) _currentRecord!.snackDone = false;
+      if (_currentRecord!.dinnerEntries.isEmpty) _currentRecord!.dinnerDone = false;
+    }
   }
 
   // ─── Field update methods ────────────────────────────────────────────────────
@@ -55,12 +65,6 @@ class DailyTrackerProvider extends ChangeNotifier {
   Future<void> updateGymDone(bool done) async {
     if (_currentRecord == null) return;
     _currentRecord!.gymDone = done;
-    await _saveCurrentRecord();
-  }
-
-  Future<void> updateProtein(double protein) async {
-    if (_currentRecord == null) return;
-    _currentRecord!.protein = protein;
     await _saveCurrentRecord();
   }
 
@@ -84,6 +88,13 @@ class DailyTrackerProvider extends ChangeNotifier {
 
   Future<void> updateMeal(String mealType, bool done) async {
     if (_currentRecord == null) return;
+    final entries = _getEntriesForMeal(mealType);
+    
+    // Enforce rule: cannot be checked if no items exist.
+    if (done && entries.isEmpty) {
+      done = false;
+    }
+    
     switch (mealType) {
       case 'preWorkout':
         _currentRecord!.preWorkoutDone = done;
@@ -107,28 +118,66 @@ class DailyTrackerProvider extends ChangeNotifier {
     await _saveCurrentRecord();
   }
 
-  Future<void> updateMealFood(String mealType, String food) async {
-    if (_currentRecord == null) return;
+  List<MealEntry> _getEntriesForMeal(String mealType) {
+    if (_currentRecord == null) return [];
     switch (mealType) {
-      case 'preWorkout':
-        _currentRecord!.preWorkoutFood = food;
-        break;
-      case 'postWorkout':
-        _currentRecord!.postWorkoutFood = food;
-        break;
-      case 'breakfast':
-        _currentRecord!.breakfastFood = food;
-        break;
-      case 'lunch':
-        _currentRecord!.lunchFood = food;
-        break;
-      case 'snack':
-        _currentRecord!.snackFood = food;
-        break;
-      case 'dinner':
-        _currentRecord!.dinnerFood = food;
-        break;
+      case 'preWorkout': return _currentRecord!.preWorkoutEntries;
+      case 'postWorkout': return _currentRecord!.postWorkoutEntries;
+      case 'breakfast': return _currentRecord!.breakfastEntries;
+      case 'lunch': return _currentRecord!.lunchEntries;
+      case 'snack': return _currentRecord!.snackEntries;
+      case 'dinner': return _currentRecord!.dinnerEntries;
+      default: return [];
     }
+  }
+
+  Future<void> addFoodToMeal(String mealType, MealEntry entry) async {
+    if (_currentRecord == null) return;
+    final entries = _getEntriesForMeal(mealType);
+    
+    // Check if food already exists (aggregate)
+    final existingIndex = entries.indexWhere((e) => e.name == entry.name && e.unit == entry.unit);
+    if (existingIndex != -1) {
+      final existing = entries[existingIndex];
+      entries[existingIndex] = MealEntry(
+        name: existing.name,
+        quantity: existing.quantity + entry.quantity,
+        unit: existing.unit,
+        calories: existing.calories + entry.calories,
+        protein: existing.protein + entry.protein,
+        carbs: existing.carbs + entry.carbs,
+        fats: existing.fats + entry.fats,
+      );
+    } else {
+      entries.add(entry);
+    }
+    
+    await _saveCurrentRecord();
+  }
+
+  Future<void> removeFoodFromMeal(String mealType, int index) async {
+    if (_currentRecord == null) return;
+    final entries = _getEntriesForMeal(mealType);
+    if (index >= 0 && index < entries.length) {
+      entries.removeAt(index);
+      
+      if (entries.isEmpty) {
+        switch (mealType) {
+          case 'preWorkout': _currentRecord!.preWorkoutDone = false; break;
+          case 'postWorkout': _currentRecord!.postWorkoutDone = false; break;
+          case 'breakfast': _currentRecord!.breakfastDone = false; break;
+          case 'lunch': _currentRecord!.lunchDone = false; break;
+          case 'snack': _currentRecord!.snackDone = false; break;
+          case 'dinner': _currentRecord!.dinnerDone = false; break;
+        }
+      }
+      
+      await _saveCurrentRecord();
+    }
+  }
+
+  Future<void> resetCurrentDay() async {
+    _currentRecord = DailyRecord.empty(_selectedDate);
     await _saveCurrentRecord();
   }
 
@@ -136,6 +185,34 @@ class DailyTrackerProvider extends ChangeNotifier {
 
   Future<void> _saveCurrentRecord() async {
     if (_currentRecord == null) return;
+    
+    // Auto-calculate macros
+    double totalCalories = 0;
+    double totalProtein = 0;
+    double totalCarbs = 0;
+    double totalFats = 0;
+    
+    void addMacros(List<MealEntry> entries) {
+      for (var entry in entries) {
+        totalCalories += entry.calories;
+        totalProtein += entry.protein;
+        totalCarbs += entry.carbs;
+        totalFats += entry.fats;
+      }
+    }
+    
+    addMacros(_currentRecord!.preWorkoutEntries);
+    addMacros(_currentRecord!.postWorkoutEntries);
+    addMacros(_currentRecord!.breakfastEntries);
+    addMacros(_currentRecord!.lunchEntries);
+    addMacros(_currentRecord!.snackEntries);
+    addMacros(_currentRecord!.dinnerEntries);
+    
+    _currentRecord!.totalCalories = totalCalories;
+    _currentRecord!.protein = totalProtein;
+    _currentRecord!.totalCarbs = totalCarbs;
+    _currentRecord!.totalFats = totalFats;
+
     _currentRecord!.calculateScore();
     await _storageService.saveRecord(_currentRecord!);
     // Streak is recalculated here synchronously so the next notifyListeners

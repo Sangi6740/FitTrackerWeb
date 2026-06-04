@@ -4,9 +4,17 @@ import '../../providers/daily_tracker_provider.dart';
 import '../../providers/analytics_provider.dart';
 import '../../widgets/glass_container.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../utils/quotes.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  int _manualOffset = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -44,6 +52,8 @@ class DashboardScreen extends StatelessWidget {
           return ListView(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
             children: [
+              _buildDailyQuote(),
+              const SizedBox(height: 32),
               Text(
                 'Today\'s Summary',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -147,21 +157,27 @@ class DashboardScreen extends StatelessWidget {
     return GlassContainer(
       borderRadius: 16,
       padding: const EdgeInsets.all(12.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, color: color, size: 28),
-          const SizedBox(height: 8),
-          Text(
-            title,
-            style: const TextStyle(fontSize: 14, color: Colors.white70),
+      child: Center(
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: color, size: 28),
+              const SizedBox(height: 8),
+              Text(
+                title,
+                style: const TextStyle(fontSize: 14, color: Colors.white70),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                value,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ],
           ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -170,16 +186,94 @@ class DashboardScreen extends StatelessWidget {
     return GlassContainer(
       padding: const EdgeInsets.all(16),
       borderRadius: 16,
+      child: Center(
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(title, style: const TextStyle(color: Colors.white70)),
+              const SizedBox(height: 8),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.tealAccent,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDailyQuote() {
+    final int daysSinceEpoch = DateTime.now().difference(DateTime(1970)).inDays;
+    final int quoteIndex = (daysSinceEpoch + _manualOffset) % Quotes.dailyQuotes.length;
+    final String todayQuote = Quotes.dailyQuotes[quoteIndex];
+
+    return GlassContainer(
+      padding: const EdgeInsets.all(20),
+      borderRadius: 16,
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(color: Colors.white70)),
-          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Row(
+                  children: [
+                    const Icon(Icons.format_quote, color: Colors.orangeAccent, size: 28),
+                    const SizedBox(width: 8),
+                    const Flexible(
+                      child: Text(
+                        'Daily Motivation',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.orangeAccent,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              InkWell(
+                onTap: () {
+                  setState(() {
+                    _manualOffset++;
+                  });
+                },
+                borderRadius: BorderRadius.circular(20),
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                  child: Text(
+                    'Show Another',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.white54,
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
           Text(
-            value,
+            '"$todayQuote"',
             style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.tealAccent,
+              fontSize: 16,
+              fontStyle: FontStyle.italic,
+              color: Colors.white,
+              height: 1.5,
             ),
           ),
         ],

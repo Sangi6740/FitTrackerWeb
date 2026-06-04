@@ -14,9 +14,9 @@ class HistoryScreen extends StatefulWidget {
 }
 
 class _HistoryScreenState extends State<HistoryScreen> {
-  DateTime _focusedDay = DateTime.now();
-  DateTime? _selectedDay;
-  Map<DateTime, DailyRecord> _recordsMap = {};
+  final _focusedDay = ValueNotifier<DateTime>(DateTime.now());
+  final _selectedDay = ValueNotifier<DateTime?>(null);
+  final _recordsMap = ValueNotifier<Map<DateTime, DailyRecord>>({});
 
   @override
   void didChangeDependencies() {
@@ -34,14 +34,20 @@ class _HistoryScreenState extends State<HistoryScreen> {
       newMap[normalizedDate] = r;
     }
 
-    setState(() {
-      _recordsMap = newMap;
-    });
+    _recordsMap.value = newMap;
   }
 
   DailyRecord? _getRecordForDay(DateTime day) {
     final normalizedDate = DateTime(day.year, day.month, day.day);
-    return _recordsMap[normalizedDate];
+    return _recordsMap.value[normalizedDate];
+  }
+
+  @override
+  void dispose() {
+    _focusedDay.dispose();
+    _selectedDay.dispose();
+    _recordsMap.dispose();
+    super.dispose();
   }
 
   void _showDayDetails(BuildContext context, DailyRecord record) {
@@ -112,18 +118,17 @@ class _HistoryScreenState extends State<HistoryScreen> {
     int mealsDone = 0;
     List<Widget> foodRows = [];
 
-    void addFoodRow(String title, bool done, String food) {
+    void addFoodRow(String title, bool done, List<MealEntry> entries) {
       if (done) {
         mealsDone++;
-        if (food.isNotEmpty) {
+        if (entries.isNotEmpty) {
           foodRows.add(Padding(
-            padding: const EdgeInsets.only(top: 4, left: 36),
-            child: Row(
+            padding: const EdgeInsets.only(top: 8, left: 36),
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('• ', style: TextStyle(color: Colors.white70)),
-                Text('$title: ', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white70)),
-                Expanded(child: Text(food, style: const TextStyle(color: Colors.white))),
+                Text('$title:', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white70)),
+                ...entries.map((e) => Text('• ${e.name} (${e.quantity.toInt()}${e.unit})', style: const TextStyle(color: Colors.white))),
               ],
             ),
           ));
@@ -131,12 +136,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
       }
     }
 
-    addFoodRow('Pre-Workout', record.preWorkoutDone, record.preWorkoutFood);
-    addFoodRow('Post-Workout', record.postWorkoutDone, record.postWorkoutFood);
-    addFoodRow('Breakfast', record.breakfastDone, record.breakfastFood);
-    addFoodRow('Lunch', record.lunchDone, record.lunchFood);
-    addFoodRow('Snack', record.snackDone, record.snackFood);
-    addFoodRow('Dinner', record.dinnerDone, record.dinnerFood);
+    addFoodRow('Pre-Workout', record.preWorkoutDone, record.preWorkoutEntries);
+    addFoodRow('Post-Workout', record.postWorkoutDone, record.postWorkoutEntries);
+    addFoodRow('Breakfast', record.breakfastDone, record.breakfastEntries);
+    addFoodRow('Lunch', record.lunchDone, record.lunchEntries);
+    addFoodRow('Snack', record.snackDone, record.snackEntries);
+    addFoodRow('Dinner', record.dinnerDone, record.dinnerEntries);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -180,11 +185,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
           child: GlassContainer(
             padding: const EdgeInsets.all(8),
             borderRadius: 24,
-            child: TableCalendar(
-              firstDay: DateTime.utc(2020, 1, 1),
-              lastDay: DateTime.utc(2030, 12, 31),
-              focusedDay: _focusedDay,
-              selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+            child: ListenableBuilder(
+              listenable: Listenable.merge([_focusedDay, _selectedDay, _recordsMap]),
+              builder: (context, _) {
+                return TableCalendar(
+                  firstDay: DateTime.utc(2020, 1, 1),
+                  lastDay: DateTime.utc(2030, 12, 31),
+                  focusedDay: _focusedDay.value,
+                  selectedDayPredicate: (day) => isSameDay(_selectedDay.value, day),
               calendarFormat: CalendarFormat.month,
               availableCalendarFormats: const {CalendarFormat.month: 'Month'},
               startingDayOfWeek: StartingDayOfWeek.monday,
@@ -209,10 +217,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 ),
               ),
               onDaySelected: (selectedDay, focusedDay) {
-                setState(() {
-                  _selectedDay = selectedDay;
-                  _focusedDay = focusedDay;
-                });
+                _selectedDay.value = selectedDay;
+                _focusedDay.value = focusedDay;
                 
                 final record = _getRecordForDay(selectedDay);
                 if (record != null) {
@@ -237,7 +243,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     return Positioned(
                       bottom: 4,
                       child: Container(
-                        width: 6,
                         height: 6,
                         decoration: BoxDecoration(
                           color: record.completionPercentage >= 80 ? Colors.tealAccent : Colors.amber,
@@ -249,10 +254,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   return null;
                 },
               ),
-            ),
-          ),
+            );
+          },
         ),
       ),
-    );
+    ),
+  ),
+);
   }
 }

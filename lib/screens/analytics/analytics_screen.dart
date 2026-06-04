@@ -247,7 +247,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with SingleTickerProv
 
   Widget _buildProteinChart(List<DailyRecord> records) {
     List<BarChartGroupData> barGroups = [];
+    double maxProtein = 0;
     for (int i = 0; i < records.length; i++) {
+      if (records[i].protein > maxProtein) maxProtein = records[i].protein;
       barGroups.add(
         BarChartGroupData(
           x: i,
@@ -263,10 +265,28 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with SingleTickerProv
       );
     }
 
+    final double maxY = (maxProtein / 20).ceil() * 20.0 + 10.0; // Ensure clean intervals
+
     return BarChart(
       BarChartData(
+        maxY: maxY == 10.0 ? 20.0 : maxY,
         gridData: const FlGridData(show: false),
         titlesData: FlTitlesData(
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 40,
+              getTitlesWidget: (value, meta) {
+                if (value == meta.max && value % meta.appliedInterval != 0) {
+                  return const SizedBox.shrink();
+                }
+                return Text(
+                  value.toInt().toString(),
+                  style: const TextStyle(fontSize: 11, color: Colors.white54),
+                );
+              },
+            ),
+          ),
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
@@ -275,7 +295,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with SingleTickerProv
                   if (records.length > 10 && value.toInt() % (records.length ~/ 5) != 0) return const SizedBox.shrink();
                   return Padding(
                     padding: const EdgeInsets.only(top: 8.0),
-                    child: Text(DateFormat('MM/dd').format(records[value.toInt()].date), style: const TextStyle(fontSize: 10)),
+                    child: Text(DateFormat('MM/dd').format(records[value.toInt()].date), style: const TextStyle(fontSize: 10, color: Colors.white54)),
                   );
                 }
                 return const SizedBox.shrink();

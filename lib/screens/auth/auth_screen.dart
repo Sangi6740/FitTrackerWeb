@@ -12,18 +12,16 @@ class AuthScreen extends StatefulWidget {
 class _AuthScreenState extends State<AuthScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  bool _isLogin = true;
-  bool _isLoading = false;
-  String _errorMessage = '';
+  final _isLogin = ValueNotifier<bool>(true);
+  final _isLoading = ValueNotifier<bool>(false);
+  final _errorMessage = ValueNotifier<String>('');
 
   Future<void> _submit() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = '';
-    });
+    _isLoading.value = true;
+    _errorMessage.value = '';
 
     try {
-      if (_isLogin) {
+      if (_isLogin.value) {
         await FirebaseAuth.instance.signInWithEmailAndPassword(
           email: _emailController.text.trim(),
           password: _passwordController.text,
@@ -35,14 +33,10 @@ class _AuthScreenState extends State<AuthScreen> {
         );
       }
     } on FirebaseAuthException catch (e) {
-      setState(() {
-        _errorMessage = e.message ?? 'An error occurred';
-      });
+      _errorMessage.value = e.message ?? 'An error occurred';
     } finally {
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        _isLoading.value = false;
       }
     }
   }
@@ -51,6 +45,9 @@ class _AuthScreenState extends State<AuthScreen> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _isLogin.dispose();
+    _isLoading.dispose();
+    _errorMessage.dispose();
     super.dispose();
   }
 
@@ -65,26 +62,29 @@ class _AuthScreenState extends State<AuthScreen> {
             child: GlassContainer(
               padding: const EdgeInsets.all(32),
               borderRadius: 24,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  _isLogin ? 'Welcome Back' : 'Create Account',
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.tealAccent,
-                  ),
-                ),
-                const SizedBox(height: 32),
-                if (_errorMessage.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: Text(
-                      _errorMessage,
-                      style: const TextStyle(color: Colors.redAccent),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
+              child: ListenableBuilder(
+                listenable: Listenable.merge([_isLogin, _isLoading, _errorMessage]),
+                builder: (context, _) {
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _isLogin.value ? 'Welcome Back' : 'Create Account',
+                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.tealAccent,
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+                      if (_errorMessage.value.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: Text(
+                            _errorMessage.value,
+                            style: const TextStyle(color: Colors.redAccent),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
                 TextField(
                   controller: _emailController,
                   decoration: InputDecoration(
@@ -127,11 +127,11 @@ class _AuthScreenState extends State<AuthScreen> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    onPressed: _isLoading ? null : _submit,
-                    child: _isLoading
+                    onPressed: _isLoading.value ? null : _submit,
+                    child: _isLoading.value
                         ? const CircularProgressIndicator(color: Colors.black)
                         : Text(
-                            _isLogin ? 'Login' : 'Sign Up',
+                            _isLogin.value ? 'Login' : 'Sign Up',
                             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                           ),
                   ),
@@ -139,18 +139,18 @@ class _AuthScreenState extends State<AuthScreen> {
                 const SizedBox(height: 16),
                 TextButton(
                   onPressed: () {
-                    setState(() {
-                      _isLogin = !_isLogin;
-                    });
+                    _isLogin.value = !_isLogin.value;
                   },
                   child: Text(
-                    _isLogin ? 'Need an account? Sign up' : 'Already have an account? Login',
+                    _isLogin.value ? 'Need an account? Sign up' : 'Already have an account? Login',
                     style: const TextStyle(color: Colors.white70),
                   ),
                 ),
               ],
-            ),
-          ),
+            );
+          },
+        ),
+      ),
         ),
         ),
       ),
