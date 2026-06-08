@@ -5,6 +5,8 @@ import 'package:table_calendar/table_calendar.dart';
 import '../../services/storage_service.dart';
 import '../../models/daily_record.dart';
 import '../../widgets/glass_container.dart';
+import 'widgets/detail_row.dart';
+import 'widgets/meals_history_row.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -87,24 +89,24 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  _buildDetailRow(
-                    Icons.score, 
-                    'Completion Score', 
-                    '${record.completionPercentage.toInt()}%${record.completionPercentage >= 100 ? ' 🔥' : ''}', 
-                    Colors.tealAccent
+                  DetailRow(
+                    icon: Icons.score, 
+                    title: 'Completion Score', 
+                    value: '${record.completionPercentage.toInt()}%${record.completionPercentage >= 100 ? ' 🔥' : ''}', 
+                    color: Colors.tealAccent
                   ),
                   const SizedBox(height: 12),
-                  _buildDetailRow(Icons.fitness_center, 'Protein', '${record.protein.toInt()}g', Colors.orange),
+                  DetailRow(icon: Icons.fitness_center, title: 'Protein', value: '${record.protein.toInt()}g', color: Colors.orange),
                   const SizedBox(height: 12),
-                  _buildDetailRow(Icons.water_drop, 'Water', '${record.water.toStringAsFixed(1)}L', Colors.blue),
+                  DetailRow(icon: Icons.water_drop, title: 'Water', value: '${record.water.toStringAsFixed(1)}L', color: Colors.blue),
                   const SizedBox(height: 12),
-                  _buildDetailRow(Icons.bedtime, 'Sleep', '${record.sleep.toStringAsFixed(1)}h', Colors.deepPurple),
+                  DetailRow(icon: Icons.bedtime, title: 'Sleep', value: '${record.sleep.toStringAsFixed(1)}h', color: Colors.deepPurple),
                   const SizedBox(height: 12),
-                  _buildDetailRow(Icons.sports_gymnastics, 'Workout', record.gymDone ? 'Completed' : 'Skipped', record.gymDone ? Colors.green : Colors.red),
+                  DetailRow(icon: Icons.sports_gymnastics, title: 'Workout', value: record.gymDone ? 'Completed' : 'Skipped', color: record.gymDone ? Colors.green : Colors.red),
                   const SizedBox(height: 12),
-                  _buildDetailRow(Icons.monitor_weight, 'Weight', '${record.weight.toStringAsFixed(1)} kg', Colors.grey),
+                  DetailRow(icon: Icons.monitor_weight, title: 'Weight', value: '${record.weight.toStringAsFixed(1)} kg', color: Colors.grey),
                   const SizedBox(height: 12),
-                  _buildMealsHistoryRow(record),
+                  MealsHistoryRow(record: record),
                 ],
               ),
             ),
@@ -114,64 +116,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  Widget _buildMealsHistoryRow(DailyRecord record) {
-    int mealsDone = 0;
-    List<Widget> foodRows = [];
 
-    void addFoodRow(String title, bool done, List<MealEntry> entries) {
-      if (done) {
-        mealsDone++;
-        if (entries.isNotEmpty) {
-          foodRows.add(Padding(
-            padding: const EdgeInsets.only(top: 8, left: 36),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('$title:', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white70)),
-                ...entries.map((e) => Text('• ${e.name} (${e.quantity.toInt()}${e.unit})', style: const TextStyle(color: Colors.white))),
-              ],
-            ),
-          ));
-        }
-      }
-    }
-
-    addFoodRow('Pre-Workout', record.preWorkoutDone, record.preWorkoutEntries);
-    addFoodRow('Post-Workout', record.postWorkoutDone, record.postWorkoutEntries);
-    addFoodRow('Breakfast', record.breakfastDone, record.breakfastEntries);
-    addFoodRow('Lunch', record.lunchDone, record.lunchEntries);
-    addFoodRow('Snack', record.snackDone, record.snackEntries);
-    addFoodRow('Dinner', record.dinnerDone, record.dinnerEntries);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildDetailRow(
-          Icons.restaurant, 
-          'Meals Logged', 
-          '$mealsDone/6', 
-          mealsDone == 6 ? Colors.orangeAccent : Colors.white54
-        ),
-        if (foodRows.isNotEmpty) ...foodRows,
-      ],
-    );
-  }
-
-  Widget _buildDetailRow(IconData icon, String title, String value, Color color) {
-    return GlassContainer(
-      padding: const EdgeInsets.all(12),
-      borderRadius: 12,
-      child: Row(
-        children: [
-          Icon(icon, color: color),
-          const SizedBox(width: 12),
-          Text(title, style: const TextStyle(fontSize: 16, color: Colors.white70)),
-          const Spacer(),
-          Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        ],
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {

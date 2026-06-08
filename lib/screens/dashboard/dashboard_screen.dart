@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/daily_tracker_provider.dart';
 import '../../providers/analytics_provider.dart';
-import '../../widgets/glass_container.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../../utils/quotes.dart';
 import 'package:go_router/go_router.dart';
+import 'widgets/summary_card.dart';
+import 'widgets/stat_box.dart';
+import 'widgets/daily_quote_card.dart';
 
 class DashboardScreen extends StatelessWidget {
   DashboardScreen({super.key});
@@ -56,7 +57,7 @@ class DashboardScreen extends StatelessWidget {
           return ListView(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
             children: [
-              _buildDailyQuote(),
+              DailyQuoteCard(manualOffset: _manualOffset),
               const SizedBox(height: 32),
               Text(
                 'Today\'s Summary',
@@ -74,41 +75,41 @@ class DashboardScreen extends StatelessWidget {
                 crossAxisSpacing: 16,
                 childAspectRatio: 1.5,
                 children: [
-                  _buildSummaryCard(
-                    'Daily %',
-                    '${todayRecord.completionPercentage.toInt()}%',
-                    Icons.check_circle,
-                    Colors.green,
+                  SummaryCard(
+                    title: 'Daily %',
+                    value: '${todayRecord.completionPercentage.toInt()}%',
+                    icon: Icons.check_circle,
+                    color: Colors.green,
                   ),
-                  _buildSummaryCard(
-                    'Protein',
-                    '${todayRecord.protein.toInt()}/110g',
-                    Icons.fitness_center,
-                    Colors.orange,
+                  SummaryCard(
+                    title: 'Protein',
+                    value: '${todayRecord.protein.toInt()}/110g',
+                    icon: Icons.fitness_center,
+                    color: Colors.orange,
                   ),
-                  _buildSummaryCard(
-                    'Water',
-                    '${todayRecord.water.toStringAsFixed(1)}/3L',
-                    Icons.water_drop,
-                    Colors.blue,
+                  SummaryCard(
+                    title: 'Water',
+                    value: '${todayRecord.water.toStringAsFixed(1)}/3L',
+                    icon: Icons.water_drop,
+                    color: Colors.blue,
                   ),
-                  _buildSummaryCard(
-                    'Sleep',
-                    '${todayRecord.sleep.toStringAsFixed(1)}/8h',
-                    Icons.bedtime,
-                    Colors.deepPurple,
+                  SummaryCard(
+                    title: 'Sleep',
+                    value: '${todayRecord.sleep.toStringAsFixed(1)}/8h',
+                    icon: Icons.bedtime,
+                    color: Colors.deepPurple,
                   ),
-                  _buildSummaryCard(
-                    'Workout',
-                    todayRecord.gymDone ? 'Done' : 'Pending',
-                    Icons.sports_gymnastics,
-                    todayRecord.gymDone ? Colors.green : Colors.red,
+                  SummaryCard(
+                    title: 'Workout',
+                    value: todayRecord.gymDone ? 'Done' : 'Pending',
+                    icon: Icons.sports_gymnastics,
+                    color: todayRecord.gymDone ? Colors.green : Colors.red,
                   ),
-                  _buildSummaryCard(
-                    'Weight',
-                    '${todayRecord.weight.toStringAsFixed(1)} kg',
-                    Icons.monitor_weight,
-                    Colors.teal,
+                  SummaryCard(
+                    title: 'Weight',
+                    value: '${todayRecord.weight.toStringAsFixed(1)} kg',
+                    icon: Icons.monitor_weight,
+                    color: Colors.teal,
                   ),
                 ],
               ),
@@ -124,23 +125,23 @@ class DashboardScreen extends StatelessWidget {
               Row(
                 children: [
                   Expanded(
-                    child: _buildStatBox(
-                      'Streak',
-                      '${trackerProvider.currentStreak} Days',
+                    child: StatBox(
+                      title: 'Streak',
+                      value: '${trackerProvider.currentStreak} Days',
                     ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
-                    child: _buildStatBox(
-                      'Week %',
-                      '${weekCompletion.toInt()}%',
+                    child: StatBox(
+                      title: 'Week %',
+                      value: '${weekCompletion.toInt()}%',
                     ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
-                    child: _buildStatBox(
-                      'Month %',
-                      '${monthCompletion.toInt()}%',
+                    child: StatBox(
+                      title: 'Month %',
+                      value: '${monthCompletion.toInt()}%',
                     ),
                   ),
                 ],
@@ -149,142 +150,6 @@ class DashboardScreen extends StatelessWidget {
           );
         },
       ),
-    );
-  }
-
-  Widget _buildSummaryCard(
-    String title,
-    String value,
-    IconData icon,
-    Color color,
-  ) {
-    return GlassContainer(
-      borderRadius: 16,
-      padding: const EdgeInsets.all(12.0),
-      child: Center(
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, color: color, size: 28),
-              const SizedBox(height: 8),
-              Text(
-                title,
-                style: const TextStyle(fontSize: 14, color: Colors.white70),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                value,
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatBox(String title, String value) {
-    return GlassContainer(
-      padding: const EdgeInsets.all(16),
-      borderRadius: 16,
-      child: Center(
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(title, style: const TextStyle(color: Colors.white70)),
-              const SizedBox(height: 8),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.tealAccent,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDailyQuote() {
-    return ValueListenableBuilder<int>(
-      valueListenable: _manualOffset,
-      builder: (context, offset, child) {
-        final int daysSinceEpoch = DateTime.now().difference(DateTime(1970)).inDays;
-        final int quoteIndex = (daysSinceEpoch + offset) % Quotes.dailyQuotes.length;
-        final String todayQuote = Quotes.dailyQuotes[quoteIndex];
-
-        return GlassContainer(
-          padding: const EdgeInsets.all(20),
-          borderRadius: 16,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Row(
-                  children: [
-                    const Icon(Icons.format_quote, color: Colors.orangeAccent, size: 28),
-                    const SizedBox(width: 8),
-                    const Flexible(
-                      child: Text(
-                        'Daily Motivation',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.orangeAccent,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              InkWell(
-                onTap: () {
-                  _manualOffset.value++;
-                },
-                borderRadius: BorderRadius.circular(20),
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-                  child: Text(
-                    'Show Another',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.white54,
-                      decoration: TextDecoration.underline,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            '"$todayQuote"',
-            style: const TextStyle(
-              fontSize: 16,
-              fontStyle: FontStyle.italic,
-              color: Colors.white,
-              height: 1.5,
-            ),
-          ),
-            ],
-          ),
-        );
-      },
     );
   }
 }
