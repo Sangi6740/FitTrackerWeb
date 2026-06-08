@@ -10,35 +10,33 @@ class MealsHistoryRow extends StatelessWidget {
     required this.record,
   });
 
+  List<Widget> _buildFoodRows(List<MealEntry> entries, String title) {
+    if (entries.isEmpty) return [];
+    return [
+      Padding(
+        padding: const EdgeInsets.only(top: 8, left: 36),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('$title:', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white70)),
+            ...entries.map((e) => Text('• ${e.name} (${e.quantity.toInt()}${e.unit})', style: const TextStyle(color: Colors.white))),
+          ],
+        ),
+      )
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     int mealsDone = 0;
     List<Widget> foodRows = [];
 
-    void addFoodRow(String title, bool done, List<MealEntry> entries) {
-      if (done) {
-        mealsDone++;
-        if (entries.isNotEmpty) {
-          foodRows.add(Padding(
-            padding: const EdgeInsets.only(top: 8, left: 36),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('$title:', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white70)),
-                ...entries.map((e) => Text('• ${e.name} (${e.quantity.toInt()}${e.unit})', style: const TextStyle(color: Colors.white))),
-              ],
-            ),
-          ));
-        }
-      }
-    }
-
-    addFoodRow('Pre-Workout', record.preWorkoutDone, record.preWorkoutEntries);
-    addFoodRow('Post-Workout', record.postWorkoutDone, record.postWorkoutEntries);
-    addFoodRow('Breakfast', record.breakfastDone, record.breakfastEntries);
-    addFoodRow('Lunch', record.lunchDone, record.lunchEntries);
-    addFoodRow('Snack', record.snackDone, record.snackEntries);
-    addFoodRow('Dinner', record.dinnerDone, record.dinnerEntries);
+    if (record.preWorkoutDone) { mealsDone++; foodRows.addAll(_buildFoodRows(record.preWorkoutEntries, 'Pre-Workout')); }
+    if (record.postWorkoutDone) { mealsDone++; foodRows.addAll(_buildFoodRows(record.postWorkoutEntries, 'Post-Workout')); }
+    if (record.breakfastDone) { mealsDone++; foodRows.addAll(_buildFoodRows(record.breakfastEntries, 'Breakfast')); }
+    if (record.lunchDone) { mealsDone++; foodRows.addAll(_buildFoodRows(record.lunchEntries, 'Lunch')); }
+    if (record.snackDone) { mealsDone++; foodRows.addAll(_buildFoodRows(record.snackEntries, 'Snack')); }
+    if (record.dinnerDone) { mealsDone++; foodRows.addAll(_buildFoodRows(record.dinnerEntries, 'Dinner')); }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
