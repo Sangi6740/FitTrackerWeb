@@ -603,42 +603,20 @@ class _MealRow extends StatelessWidget {
 
 // ─── _FoodSearchSheet ────────────────────────────────────────────────────────
 
-class _FoodSearchSheet extends StatefulWidget {
+class _FoodSearchSheet extends StatelessWidget {
   final ValueChanged<MealEntry> onPicked;
 
-  const _FoodSearchSheet({required this.onPicked});
+  const _FoodSearchSheet({super.key, required this.onPicked});
 
-  @override
-  State<_FoodSearchSheet> createState() => _FoodSearchSheetState();
-}
-
-class _FoodSearchSheetState extends State<_FoodSearchSheet> {
-  List<FoodItem> _foods = [];
-  bool _isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadFoods();
-  }
-
-  void _loadFoods() async {
-    final storage = context.read<StorageService>();
-    final foods = await storage.getAllFoods();
-    setState(() {
-      _foods = foods;
-      _isLoading = false;
-    });
-  }
-
-  void _showQuantityDialog(FoodItem food) {
+  void _showQuantityDialog(BuildContext context, FoodItem food) {
     final qtyController = TextEditingController(text: '1');
-    String? errorText;
+    final errorNotifier = ValueNotifier<String?>(null);
 
     showDialog(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setState) {
+      builder: (ctx) => ValueListenableBuilder<String?>(
+        valueListenable: errorNotifier,
+        builder: (context, errorText, child) {
           return AlertDialog(
             backgroundColor: const Color(0xFF1A1A2E),
             title: Text('Amount of ${food.name}'),
@@ -654,8 +632,8 @@ class _FoodSearchSheetState extends State<_FoodSearchSheet> {
               ),
               style: const TextStyle(color: Colors.white),
               onChanged: (val) {
-                if (errorText != null) {
-                  setState(() => errorText = null);
+                if (errorNotifier.value != null) {
+                  errorNotifier.value = null;
                 }
               },
             ),
@@ -668,9 +646,7 @@ class _FoodSearchSheetState extends State<_FoodSearchSheet> {
                 onPressed: () {
                   final qty = double.tryParse(qtyController.text) ?? 1.0;
                   if (qty <= 0) {
-                    setState(() {
-                      errorText = 'Must be greater than 0';
-                    });
+                    errorNotifier.value = 'Must be greater than 0';
                     return;
                   }
                   final entry = MealEntry(
@@ -683,7 +659,7 @@ class _FoodSearchSheetState extends State<_FoodSearchSheet> {
                     fats: food.fats * qty,
                   );
                   Navigator.pop(ctx);
-                  widget.onPicked(entry);
+                  onPicked(entry);
                 },
                 child: const Text('Add', style: TextStyle(color: Colors.tealAccent)),
               ),
@@ -694,7 +670,7 @@ class _FoodSearchSheetState extends State<_FoodSearchSheet> {
     );
   }
 
-  void _showCreateFoodDialog() {
+  void _showCreateFoodDialog(BuildContext context) {
     final nameCtrl = TextEditingController();
     final unitCtrl = TextEditingController();
     final calCtrl = TextEditingController();
@@ -736,7 +712,7 @@ class _FoodSearchSheetState extends State<_FoodSearchSheet> {
                 await context.read<StorageService>().addFoodToDatabase(newFood);
                 if (!ctx.mounted) return;
                 Navigator.pop(ctx);
-                _showQuantityDialog(newFood);
+                _showQuantityDialog(context, newFood);
               }
             },
             child: const Text('Save & Select', style: TextStyle(color: Colors.tealAccent)),
@@ -748,65 +724,74 @@ class _FoodSearchSheetState extends State<_FoodSearchSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Container(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.85,
-        ),
-        decoration: const BoxDecoration(
-          color: Color(0xFF1A1A2E),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-        child: Column(
-          children: [
-            const SizedBox(height: 12),
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.white24,
-                borderRadius: BorderRadius.circular(2),
-              ),
+    final storage = context.read<StorageService>();
+    return FutureBuilder<List<FoodItem>>(
+      future: storage.getAllFoods(),
+      builder: (context, snapshot) {
+        final isLoading = snapshot.connectionState == ConnectionState.waiting;
+        final foods = snapshot.data ?? [];
+
+        return SafeArea(
+          child: Container(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.85,
             ),
-            const SizedBox(height: 16),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20),
-              child: Text(
-                'Select Food',
-                style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
-              ),
+            decoration: const BoxDecoration(
+              color: Color(0xFF1A1A2E),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
             ),
-            const SizedBox(height: 16),
-            if (_isLoading)
-              const Expanded(child: Center(child: CircularProgressIndicator(color: Colors.tealAccent)))
-            else
-              Expanded(
-                child: ListView.builder(
-                  itemCount: _foods.length + 1,
-                  itemBuilder: (ctx, i) {
-                    if (i == _foods.length) {
-                      return ListTile(
-                        leading: const Icon(Icons.add, color: Colors.tealAccent),
-                        title: const Text('Create Custom Food', style: TextStyle(color: Colors.tealAccent, fontWeight: FontWeight.bold)),
-                        onTap: () => _showCreateFoodDialog(),
-                      );
-                    }
-                    final food = _foods[i];
-                    return ListTile(
-                      title: Text(food.name, style: const TextStyle(color: Colors.white)),
-                      subtitle: Text(
-                        '${food.calories.toInt()} kcal • ${food.protein.toStringAsFixed(1)}g P per ${food.unit}',
-                        style: const TextStyle(color: Colors.white54, fontSize: 12),
-                      ),
-                      onTap: () => _showQuantityDialog(food),
-                    );
-                  },
+            padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+            child: Column(
+              children: [
+                const SizedBox(height: 12),
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
-              ),
-          ],
-        ),
-      ),
+                const SizedBox(height: 16),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 20),
+                  child: Text(
+                    'Select Food',
+                    style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                if (isLoading)
+                  const Expanded(child: Center(child: CircularProgressIndicator(color: Colors.tealAccent)))
+                else
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: foods.length + 1,
+                      itemBuilder: (ctx, i) {
+                        if (i == foods.length) {
+                          return ListTile(
+                            leading: const Icon(Icons.add, color: Colors.tealAccent),
+                            title: const Text('Create Custom Food', style: TextStyle(color: Colors.tealAccent, fontWeight: FontWeight.bold)),
+                            onTap: () => _showCreateFoodDialog(context),
+                          );
+                        }
+                        final food = foods[i];
+                        return ListTile(
+                          title: Text(food.name, style: const TextStyle(color: Colors.white)),
+                          subtitle: Text(
+                            '${food.calories.toInt()} kcal • ${food.protein.toStringAsFixed(1)}g P per ${food.unit}',
+                            style: const TextStyle(color: Colors.white54, fontSize: 12),
+                          ),
+                          onTap: () => _showQuantityDialog(context, food),
+                        );
+                      },
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      }
     );
   }
 }

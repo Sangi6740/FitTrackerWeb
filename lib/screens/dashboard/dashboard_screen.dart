@@ -7,15 +7,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../utils/quotes.dart';
 import 'package:go_router/go_router.dart';
 
-class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({super.key});
+class DashboardScreen extends StatelessWidget {
+  DashboardScreen({super.key});
 
-  @override
-  State<DashboardScreen> createState() => _DashboardScreenState();
-}
-
-class _DashboardScreenState extends State<DashboardScreen> {
-  int _manualOffset = 0;
+  final ValueNotifier<int> _manualOffset = ValueNotifier<int>(0);
 
   @override
   Widget build(BuildContext context) {
@@ -220,16 +215,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildDailyQuote() {
-    final int daysSinceEpoch = DateTime.now().difference(DateTime(1970)).inDays;
-    final int quoteIndex = (daysSinceEpoch + _manualOffset) % Quotes.dailyQuotes.length;
-    final String todayQuote = Quotes.dailyQuotes[quoteIndex];
+    return ValueListenableBuilder<int>(
+      valueListenable: _manualOffset,
+      builder: (context, offset, child) {
+        final int daysSinceEpoch = DateTime.now().difference(DateTime(1970)).inDays;
+        final int quoteIndex = (daysSinceEpoch + offset) % Quotes.dailyQuotes.length;
+        final String todayQuote = Quotes.dailyQuotes[quoteIndex];
 
-    return GlassContainer(
-      padding: const EdgeInsets.all(20),
-      borderRadius: 16,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+        return GlassContainer(
+          padding: const EdgeInsets.all(20),
+          borderRadius: 16,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -256,9 +254,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               const SizedBox(width: 8),
               InkWell(
                 onTap: () {
-                  setState(() {
-                    _manualOffset++;
-                  });
+                  _manualOffset.value++;
                 },
                 borderRadius: BorderRadius.circular(20),
                 child: const Padding(
@@ -285,8 +281,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
               height: 1.5,
             ),
           ),
-        ],
-      ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

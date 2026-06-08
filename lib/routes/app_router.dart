@@ -51,7 +51,7 @@ final GoRouter appRouter = GoRouter(
       routes: [
         GoRoute(
           path: '/dashboard',
-          builder: (context, state) => const DashboardScreen(),
+          builder: (context, state) => DashboardScreen(),
         ),
         GoRoute(
           path: '/tracker',
