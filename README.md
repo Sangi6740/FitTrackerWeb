@@ -9,6 +9,7 @@ FitTrack Pro is a premium, cross-platform fitness and diet tracking application 
 - **Custom Foods:** Add custom meals which are automatically title-cased, saved, and categorized under a "Your Custom Foods" section for future use.
 - **Streak Calendar:** Automatically calculates and displays a continuous streak of perfect logging days, gracefully handling timezone shifts.
 - **Analytics Dashboard:** Visualize your weight trends and daily completions with interactive charts.
+- **AI Fitness Coach:** Get personalized fitness advice and interact with our intelligent chatbot built with the Google Gemini API.
 - **PWA Ready:** Fully optimized as a Progressive Web App. Users can "Add to Home Screen" on their mobile devices for a native app experience, complete with custom icons.
 
 ## 🛠 Tech Stack
