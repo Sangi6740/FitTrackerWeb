@@ -188,7 +188,9 @@ class StorageService extends ChangeNotifier {
     }
 
     void checkEntries(List<MealEntry> entries) {
-      for (var e in entries) check(e.name);
+      for (var e in entries) {
+        check(e.name);
+      }
     }
 
     for (var record in _recordsMap.values) {

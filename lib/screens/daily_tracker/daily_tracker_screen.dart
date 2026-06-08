@@ -280,7 +280,7 @@ class DailyTrackerScreen extends StatelessWidget {
           child: LinearProgressIndicator(
             value: (value / goal).clamp(0.0, 1.0),
             minHeight: 12,
-            backgroundColor: color.withOpacity(0.2),
+            backgroundColor: color.withValues(alpha: 0.2),
             valueColor: AlwaysStoppedAnimation<Color>(color),
           ),
         ),
@@ -734,6 +734,7 @@ class _FoodSearchSheetState extends State<_FoodSearchSheet> {
               );
               if (newFood.name.isNotEmpty) {
                 await context.read<StorageService>().addFoodToDatabase(newFood);
+                if (!ctx.mounted) return;
                 Navigator.pop(ctx);
                 _showQuantityDialog(newFood);
               }

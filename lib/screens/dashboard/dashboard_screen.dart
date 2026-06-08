@@ -5,6 +5,7 @@ import '../../providers/analytics_provider.dart';
 import '../../widgets/glass_container.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../utils/quotes.dart';
+import 'package:go_router/go_router.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -23,7 +24,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
         title: const Text('Dashboard'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.chat_bubble_outline, color: Colors.tealAccent),
+            tooltip: 'AI Coach',
+            onPressed: () {
+              context.push('/test');
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.logout, color: Colors.tealAccent),
+            tooltip: 'Logout',
             onPressed: () async {
               await FirebaseAuth.instance.signOut();
             },

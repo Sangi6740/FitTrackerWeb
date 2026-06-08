@@ -1,3 +1,4 @@
+import 'package:fit_track_pro/screens/test_screen.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
 
@@ -26,7 +27,9 @@ class GoRouterRefreshStream extends ChangeNotifier {
 
 final GoRouter appRouter = GoRouter(
   initialLocation: '/dashboard',
-  refreshListenable: GoRouterRefreshStream(FirebaseAuth.instance.authStateChanges()),
+  refreshListenable: GoRouterRefreshStream(
+    FirebaseAuth.instance.authStateChanges(),
+  ),
   redirect: (context, state) {
     final user = FirebaseAuth.instance.currentUser;
     final isGoingToAuth = state.matchedLocation == '/auth';
@@ -40,10 +43,7 @@ final GoRouter appRouter = GoRouter(
     return null;
   },
   routes: [
-    GoRoute(
-      path: '/auth',
-      builder: (context, state) => const AuthScreen(),
-    ),
+    GoRoute(path: '/auth', builder: (context, state) => const AuthScreen()),
     ShellRoute(
       builder: (context, state, child) {
         return MainLayout(child: child);
@@ -64,6 +64,10 @@ final GoRouter appRouter = GoRouter(
         GoRoute(
           path: '/history',
           builder: (context, state) => const HistoryScreen(),
+        ),
+        GoRoute(
+          path: '/test',
+          builder: (context, state) => const GeminiTestScreen(),
         ),
       ],
     ),
